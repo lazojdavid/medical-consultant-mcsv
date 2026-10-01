@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -139,7 +140,15 @@ export class Home {
           : [...current, appointment]);
         this.closeDialog();
       },
-      error: () => this.errorMessage.set('No fue posible guardar los cambios. Revisa los datos y los permisos de tu usuario.'),
+      error: (error: HttpErrorResponse) => {
+        const backendMessage = error.error?.mensaje ?? error.error?.message;
+        if (backendMessage === "The appointment is outside the doctor's availability.") {
+          this.errorMessage.set('La cita está fuera del horario disponible del médico. Revisa el día y que todo el intervalo quede dentro de una disponibilidad activa.');
+          return;
+        }
+
+        this.errorMessage.set(backendMessage ?? 'No fue posible guardar los cambios. Revisa los datos y los permisos de tu usuario.');
+      },
     });
   }
 
