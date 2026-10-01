@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:8081/api
+@userRoleId = 1
+
+### Create user role
+POST {{baseUrl}}/user-roles
+Content-Type: application/json
+
+{
+  "roleId": 1,
+  "userId": 1
+}
+
+### Update user role
+PUT {{baseUrl}}/user-roles/{{userRoleId}}
+Content-Type: application/json
+
+{
+  "roleId": 2,
+  "userId": 1
+}
+
+### Get user role by id
+GET {{baseUrl}}/user-roles/{{userRoleId}}
+
+### Delete user role
+DELETE {{baseUrl}}/user-roles/{{userRoleId}}
+
+### Get all user roles
+GET {{baseUrl}}/user-roles

@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:8081/api
+@roleId = 1
+
+### Create role
+POST {{baseUrl}}/roles
+Content-Type: application/json
+
+{
+  "description": "Medico"
+}
+
+### Create MEDICO role
+POST {{baseUrl}}/roles
+Content-Type: application/json
+
+{
+  "description": "MEDICO"
+}
+
+### Create PACIENTE role
+POST {{baseUrl}}/roles
+Content-Type: application/json
+
+{
+  "description": "PACIENTE"
+}
+
+### Create RECEPCIONISTA role
+POST {{baseUrl}}/roles
+Content-Type: application/json
+
+{
+  "description": "RECEPCIONISTA"
+}
+
+### Update role
+PUT {{baseUrl}}/roles/{{roleId}}
+Content-Type: application/json
+
+{
+  "description": "Recruiter"
+}
+
+### Get role by id
+GET {{baseUrl}}/roles/{{roleId}}
+
+### Delete role
+DELETE {{baseUrl}}/roles/{{roleId}}
+
+### Get all roles
+GET {{baseUrl}}/roles

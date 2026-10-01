@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:8081/api
+@userId = 1
+
+### Create user
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "username": "jorge2",
+  "passwordHash": "indrapass",
+  "email": "david@example.com",
+  "active": true,
+  "phone": "+5197620150",
+  "refreshToken": "refresh-token-sample"
+}
+
+### Update user
+PUT {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+
+{
+  "username": "john.doe",
+  "passwordHash": "new-hashed-password-456",
+  "email": "john.doe@example.com",
+  "active": true,
+  "phone": "+573009998877",
+  "refreshToken": "refresh-token-updated"
+}
+
+### Get user by id
+GET {{baseUrl}}/users/{{userId}}
+
+### Delete user
+DELETE {{baseUrl}}/users/{{userId}}
+
+### Get all users
+GET {{baseUrl}}/users

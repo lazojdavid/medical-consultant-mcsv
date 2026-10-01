@@ -1,0 +1,139 @@
+<div class="workspace">
+  <aside class="sidebar">
+    <a class="brand" href="/home" aria-label="Medical Consult, inicio">
+      <span class="brand-mark">MC</span>
+      <span class="brand-copy"><strong>Medical Consult</strong><small>GESTIÓN CLÍNICA</small></span>
+    </a>
+
+    <div class="nav-label">OPERACIÓN</div>
+    <nav aria-label="Módulos">
+      <button type="button" class="nav-item" [class.active]="activeSection() === 'appointments'" (click)="selectSection('appointments')">
+        <span class="nav-symbol">◷</span><span>Citas</span><span class="nav-count">{{ appointments().length }}</span>
+      </button>
+      <button type="button" class="nav-item" [class.active]="activeSection() === 'consultations'" (click)="selectSection('consultations')">
+        <span class="nav-symbol">▤</span><span>Consultas</span><span class="nav-pending">API</span>
+      </button>
+      <button type="button" class="nav-item" [class.active]="activeSection() === 'patients'" (click)="selectSection('patients')">
+        <span class="nav-symbol">♙</span><span>Pacientes</span><span class="nav-pending">API</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="connection-state"><span class="connection-dot"></span><span>Sesión autorizada</span></div>
+      <button type="button" class="logout-button" (click)="logout()"><span aria-hidden="true">↪</span> Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <span>Centro de coordinación</span>
+      <span class="topbar-context"><span class="live-dot"></span> Panel de administración</span>
+    </header>
+
+    <div class="page-wrap">
+      <section class="page-heading">
+        <div>
+          <p class="eyebrow">MEDICAL CONSULT <span>/</span> {{ activeSection() === 'appointments' ? 'CITAS' : activeSection() === 'patients' ? 'PACIENTES' : 'CONSULTAS' }}</p>
+          <h1>{{ activeSection() === 'appointments' ? 'Agenda de citas' : activeSection() === 'patients' ? 'Pacientes' : 'Consultas' }}</h1>
+          <p class="heading-subtitle">{{ activeSection() === 'appointments' ? 'Organiza y actualiza la atención programada.' : activeSection() === 'patients' ? 'Directorio y expediente de pacientes.' : 'Registro de atenciones clínicas.' }}</p>
+        </div>
+        <div class="heading-date"><span class="date-mark">01</span><span><strong>Área clínica</strong><small>OPERACIÓN DIARIA</small></span></div>
+      </section>
+
+      <section class="metrics" aria-label="Resumen">
+        <article class="metric metric-primary"><span class="metric-label">Citas cargadas</span><strong>{{ appointments().length }}</strong><span class="metric-note">en la búsqueda actual</span><span class="metric-icon">◷</span></article>
+        <article class="metric"><span class="metric-label">Programadas</span><strong>{{ scheduledCount() }}</strong><span class="metric-note">pendientes de atención</span><span class="metric-icon">✓</span></article>
+        <article class="metric"><span class="metric-label">Módulos clínicos</span><strong>03</strong><span class="metric-note">citas, consultas y pacientes</span><span class="metric-icon">▦</span></article>
+      </section>
+
+      <section class="data-section" *ngIf="activeSection() === 'appointments'">
+        <div class="section-heading">
+          <div><h2>Registro de citas</h2><p>Consulta por paciente o profesional para cargar el grid.</p></div>
+          <button type="button" class="primary-button" (click)="openCreateDialog()"><span aria-hidden="true">＋</span> Nueva cita</button>
+        </div>
+
+        <div class="toolbar">
+          <div class="filters">
+            <label class="visually-hidden" for="filterType">Buscar citas por</label>
+            <select id="filterType" [(ngModel)]="filterType" name="filterType">
+              <option value="patient">Paciente</option>
+              <option value="doctor">Profesional</option>
+            </select>
+            <label class="visually-hidden" for="filterId">Identificador</label>
+            <input id="filterId" type="number" min="1" [(ngModel)]="filterId" name="filterId" placeholder="ID del paciente o profesional" (keyup.enter)="loadAppointments()" />
+            <button type="button" class="secondary-button" (click)="loadAppointments()" [disabled]="isLoading()">{{ isLoading() ? 'Buscando...' : 'Buscar' }}</button>
+          </div>
+          <span class="result-count">{{ appointments().length }} registros</span>
+        </div>
+
+        <div class="alert-error" *ngIf="errorMessage()" role="alert">{{ errorMessage() }}</div>
+
+        <div class="table-frame">
+          <table>
+            <thead><tr><th>CITA</th><th>PACIENTE</th><th>PROFESIONAL</th><th>FECHA Y HORA</th><th>MOTIVO</th><th>ESTADO</th><th><span class="visually-hidden">Acciones</span></th></tr></thead>
+            <tbody>
+              <tr *ngFor="let appointment of appointments(); trackBy: trackById">
+                <td class="id-cell">#{{ appointment.id }}</td>
+                <td>{{ appointment.patientId }}</td>
+                <td>{{ appointment.doctorId }}</td>
+                <td><strong class="date-value">{{ formatDate(appointment.startsAt) }}</strong><small class="date-end">Fin {{ formatDate(appointment.endsAt) }}</small></td>
+                <td class="reason-cell">{{ appointment.reason || 'Sin motivo indicado' }}</td>
+                <td><span class="status" [class.status-cancelled]="appointment.status === 'CANCELLED'">{{ appointment.status === 'SCHEDULED' ? 'Programada' : 'Cancelada' }}</span></td>
+                <td class="row-actions"><button type="button" title="Reprogramar cita" aria-label="Reprogramar cita" [disabled]="appointment.status !== 'SCHEDULED'" (click)="openRescheduleDialog(appointment)">Editar</button><button type="button" class="cancel-action" title="Cancelar cita" aria-label="Cancelar cita" [disabled]="appointment.status !== 'SCHEDULED'" (click)="openCancelDialog(appointment)">Cancelar</button></td>
+              </tr>
+              <tr *ngIf="appointments().length === 0">
+                <td colspan="7" class="empty-cell">
+                  <span class="empty-symbol">◷</span>
+                  <strong>{{ isLoading() ? 'Cargando citas' : 'Sin citas para mostrar' }}</strong>
+                  <span>{{ isLoading() ? 'Consultando mcsv-citas...' : 'Busca por ID de paciente o profesional, o crea una cita nueva.' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="data-note">Las citas se cancelan conservando su historial; el servicio no expone borrado físico ni listado global.</p>
+      </section>
+
+      <section class="data-section" *ngIf="activeSection() === 'patients' || activeSection() === 'consultations'">
+        <div class="section-heading">
+          <div><h2>{{ activeSection() === 'patients' ? 'Directorio de pacientes' : 'Registro de consultas' }}</h2><p>Grid preparado para la gestión del módulo clínico.</p></div>
+          <button type="button" class="primary-button" disabled><span aria-hidden="true">＋</span> {{ activeSection() === 'patients' ? 'Nuevo paciente' : 'Nueva consulta' }}</button>
+        </div>
+        <div class="integration-notice">
+          <span class="notice-mark">i</span>
+          <div><strong>Microservicio pendiente de integración</strong><p>{{ activeSection() === 'patients' ? 'mcsv_pacientes no contiene código fuente ni un contrato REST en este workspace. El grid se habilitará al definir sus campos y operaciones CRUD.' : 'mcsv_consultas no contiene código fuente ni un contrato REST en este workspace. El grid se habilitará al definir sus campos y operaciones CRUD.' }}</p></div>
+          <span class="api-badge">API NO DISPONIBLE</span>
+        </div>
+        <div class="table-frame unavailable-grid">
+          <table *ngIf="activeSection() === 'patients'"><thead><tr><th>ID</th><th>NOMBRE</th><th>DOCUMENTO</th><th>CONTACTO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody><tr><td colspan="6" class="empty-cell"><span class="empty-symbol">♙</span><strong>Esperando mcsv-pacientes</strong><span>No hay datos conectados para mostrar.</span></td></tr></tbody></table>
+          <table *ngIf="activeSection() === 'consultations'"><thead><tr><th>ID</th><th>PACIENTE</th><th>PROFESIONAL</th><th>FECHA</th><th>MOTIVO</th><th>ESTADO</th><th>ACCIONES</th></tr></thead><tbody><tr><td colspan="7" class="empty-cell"><span class="empty-symbol">▤</span><strong>Esperando mcsv-consultas</strong><span>No hay datos conectados para mostrar.</span></td></tr></tbody></table>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="dialog-backdrop" *ngIf="dialogMode()" (click)="closeDialog()">
+  <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title" (click)="$event.stopPropagation()">
+    <button type="button" class="dialog-close" aria-label="Cerrar" (click)="closeDialog()">×</button>
+    <p class="eyebrow">AGENDA <span>/</span> {{ dialogMode() === 'create' ? 'NUEVA CITA' : dialogMode() === 'reschedule' ? 'REPROGRAMAR' : 'CANCELAR' }}</p>
+    <h2 id="dialog-title">{{ dialogMode() === 'create' ? 'Programar cita' : dialogMode() === 'reschedule' ? 'Cambiar horario' : 'Cancelar cita' }}</h2>
+    <p class="dialog-description" *ngIf="dialogMode() === 'cancel'">La cita quedará en el historial con estado cancelado.</p>
+
+    <form (ngSubmit)="saveAppointment()" *ngIf="dialogMode() === 'create' || dialogMode() === 'reschedule'">
+      <div class="form-grid" *ngIf="dialogMode() === 'create'">
+        <label>Paciente (ID)<input type="number" name="patientId" min="1" required [(ngModel)]="draft.patientId" /></label>
+        <label>Profesional (ID)<input type="number" name="doctorId" min="1" required [(ngModel)]="draft.doctorId" /></label>
+      </div>
+      <label>Inicio<input type="datetime-local" name="startsAt" required [(ngModel)]="draft.startsAt" /></label>
+      <label>Fin<input type="datetime-local" name="endsAt" required [(ngModel)]="draft.endsAt" /></label>
+      <label *ngIf="dialogMode() === 'create'">Motivo<input type="text" name="reason" maxlength="500" [(ngModel)]="draft.reason" placeholder="Motivo de la consulta" /></label>
+      <div class="dialog-actions"><button type="button" class="secondary-button" (click)="closeDialog()">Volver</button><button type="submit" class="primary-button" [disabled]="isSaving()">{{ isSaving() ? 'Guardando...' : 'Guardar cita' }}</button></div>
+    </form>
+
+    <form (ngSubmit)="saveAppointment()" *ngIf="dialogMode() === 'cancel'">
+      <label>Motivo de cancelación<textarea name="cancelReason" required maxlength="500" [(ngModel)]="cancelReason" rows="4" placeholder="Indica por qué se cancela esta cita"></textarea></label>
+      <div class="dialog-actions"><button type="button" class="secondary-button" (click)="closeDialog()">Volver</button><button type="submit" class="danger-button" [disabled]="isSaving() || !cancelReason.trim()">{{ isSaving() ? 'Cancelando...' : 'Confirmar cancelación' }}</button></div>
+    </form>
+  </section>
+</div>

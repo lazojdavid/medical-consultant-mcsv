@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:8082
+@token = {{$dotenv AUTH_ACCESS_TOKEN}}
+
+### Create recurring doctor availability (ISO weekday: Monday=1 ... Sunday=7)
+POST {{baseUrl}}/api/availabilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "doctorId": 202,
+  "dayOfWeek": 1,
+  "startTime": "08:00:00",
+  "endTime": "16:00:00"
+}
+
+### Update recurring availability
+PUT {{baseUrl}}/api/availabilities/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dayOfWeek": 1,
+  "startTime": "09:00:00",
+  "endTime": "17:00:00",
+  "active": true
+}
+
+### Deactivate availability
+DELETE {{baseUrl}}/api/availabilities/1
+Authorization: Bearer {{token}}
+
+### View doctor availability
+GET {{baseUrl}}/api/availabilities/doctor/202
+Authorization: Bearer {{token}}

@@ -1,0 +1,207 @@
+@baseUrl = http://localhost:8082
+@token = {{$dotenv AUTH_ACCESS_TOKEN}}
+@correlationId = {{$guid}}
+@patientId = 101
+@doctorId = 202
+
+# Requisitos:
+# - AUTH_ACCESS_TOKEN debe pertenecer a un usuario con rol ADMINISTRADOR, MEDICO o RECEPCIONISTA.
+# - El doctor 202 debe tener disponibilidad activa los lunes de 08:00 a 16:00 (configurable en availability.http).
+# - PostgreSQL y Kafka deben estar disponibles.
+# - Las fechas de ejemplo corresponden al lunes 7 de enero de 2030.
+
+### Crear cita (201)
+# @name createAppointment
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "patientId": {{patientId}},
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T09:00:00",
+  "endsAt": "2030-01-07T09:30:00",
+  "reason": "Consulta general"
+}
+
+### Consultar cita por ID (200)
+GET {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Listar citas del paciente (200)
+GET {{baseUrl}}/api/appointments/patient/{{patientId}}
+Authorization: Bearer {{token}}
+
+### Listar citas del doctor (200)
+GET {{baseUrl}}/api/appointments/doctor/{{doctorId}}
+Authorization: Bearer {{token}}
+
+### Reprogramar cita (200)
+# @name rescheduleAppointment
+PUT {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}/reschedule
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "startsAt": "2030-01-07T10:00:00",
+  "endsAt": "2030-01-07T10:30:00"
+}
+
+### Cancelar cita (200)
+# @name cancelAppointment
+POST {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "reason": "El paciente solicitó cancelar la cita"
+}
+
+### Verificar cita cancelada (200, status CANCELLED)
+GET {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Intentar cancelar una cita ya cancelada (409)
+POST {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "Segundo intento de cancelación"
+}
+
+### Intentar reprogramar una cita ya cancelada (409)
+PUT {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}/reschedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "startsAt": "2030-01-07T11:00:00",
+  "endsAt": "2030-01-07T11:30:00"
+}
+
+### Crear otra cita en el horario liberado al cancelar (201)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "patientId": 103,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T10:00:00",
+  "endsAt": "2030-01-07T10:30:00",
+  "reason": "Reutilizar horario liberado"
+}
+
+### Rechazar cruce de horario del doctor (409)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 104,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T10:15:00",
+  "endsAt": "2030-01-07T10:45:00",
+  "reason": "Debe chocar con la segunda cita"
+}
+
+### Rechazar cruce de horario del paciente (409)
+# Requiere una disponibilidad activa para el doctor 203 el lunes de 08:00 a 16:00.
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 103,
+  "doctorId": 203,
+  "startsAt": "2030-01-07T10:15:00",
+  "endsAt": "2030-01-07T10:45:00",
+  "reason": "Debe chocar con la cita del paciente"
+}
+
+### Rechazar cita fuera de disponibilidad (409)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 105,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T16:00:00",
+  "endsAt": "2030-01-07T16:30:00",
+  "reason": "Fuera del horario configurado"
+}
+
+### Rechazar cita en el pasado (400)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 106,
+  "doctorId": {{doctorId}},
+  "startsAt": "2020-01-06T09:00:00",
+  "endsAt": "2020-01-06T09:30:00",
+  "reason": "Fecha pasada"
+}
+
+### Rechazar fin anterior al inicio (400)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 107,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T10:00:00",
+  "endsAt": "2030-01-07T09:30:00",
+  "reason": "Rango inválido"
+}
+
+### Rechazar cita que cruza de día (400)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 108,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T23:30:00",
+  "endsAt": "2030-01-08T00:30:00",
+  "reason": "No se permiten citas entre días"
+}
+
+### Rechazar IDs no positivos (400)
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "patientId": 0,
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T12:00:00",
+  "endsAt": "2030-01-07T12:30:00",
+  "reason": "ID inválido"
+}
+
+### Rechazar motivo de cancelación vacío (400)
+POST {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "   "
+}
+
+### Rechazar cita inexistente (404)
+GET {{baseUrl}}/api/appointments/999999999
+Authorization: Bearer {{token}}
+
+### Rechazar petición sin token (401)
+GET {{baseUrl}}/api/appointments/{{createAppointment.response.body.$.id}}
+Authorization: Bearer {{token}}

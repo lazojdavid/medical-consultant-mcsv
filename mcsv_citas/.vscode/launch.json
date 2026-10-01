@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MedicalCitasApplication<mcsv-citas>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "medical_consult.citas.MedicalCitasApplication",
+            "projectName": "mcsv-citas",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

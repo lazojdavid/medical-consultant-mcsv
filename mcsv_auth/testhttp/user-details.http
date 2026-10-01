@@ -1,0 +1,35 @@
+@baseUrl = http://localhost:8081/api
+@userDetailId = 1
+
+### Create user detail
+POST {{baseUrl}}/user-details
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "email": "jdoe@example.com",
+  "name": "John",
+  "lastName": "Doe",
+  "address": "123 Main St"
+}
+
+### Update user detail
+PUT {{baseUrl}}/user-details/{{userDetailId}}
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "email": "john.doe@example.com",
+  "name": "John",
+  "lastName": "Doe",
+  "address": "742 Evergreen Terrace"
+}
+
+### Get user detail by id
+GET {{baseUrl}}/user-details/{{userDetailId}}
+
+### Delete user detail
+DELETE {{baseUrl}}/user-details/{{userDetailId}}
+
+### Get all user details
+GET {{baseUrl}}/user-details
