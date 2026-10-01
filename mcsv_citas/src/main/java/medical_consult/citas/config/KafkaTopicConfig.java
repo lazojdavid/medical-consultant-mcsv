@@ -1,6 +1,7 @@
 package medical_consult.citas.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
@@ -8,6 +9,7 @@ import org.springframework.kafka.config.TopicBuilder;
 import medical_consult.citas.messaging.KafkaTopics;
 
 @Configuration
+@ConditionalOnProperty(prefix = "app.kafka", name = "enabled", havingValue = "true")
 public class KafkaTopicConfig {
 
     @Bean

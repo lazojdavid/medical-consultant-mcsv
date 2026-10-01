@@ -1,6 +1,7 @@
 package medical_consult.citas.messaging.producer;
 
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -9,6 +10,7 @@ import medical_consult.citas.messaging.KafkaTopics;
 import medical_consult.citas.messaging.event.AppointmentEvent;
 
 @Component
+@ConditionalOnProperty(prefix = "app.kafka", name = "enabled", havingValue = "true")
 public class AppointmentNotificationProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;

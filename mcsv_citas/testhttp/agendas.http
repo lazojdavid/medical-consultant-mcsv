@@ -1,0 +1,109 @@
+@baseUrl = http://localhost:8082
+@token = {{$dotenv AUTH_ACCESS_TOKEN}}
+@correlationId = {{$guid}}
+@doctorId = 902
+@patientId = 801
+
+# Ejecutar en orden.
+# El token debe tener rol ADMINISTRADOR, MEDICO o RECEPCIONISTA.
+# Disponibilidad semanal: lunes (ISO 1), de 08:00 a 17:00.
+# Fecha de prueba: lunes 7 de enero de 2030.
+# Kafka esta desactivado en application.properties; las notificaciones solo se enviaran
+# cuando Kafka se habilite y AppointmentNotificationProducer tenga un KafkaTemplate.
+
+### 1. Crear disponibilidad del doctor (201)
+# @name createAvailability
+POST {{baseUrl}}/api/availabilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "doctorId": {{doctorId}},
+  "dayOfWeek": 1,
+  "startTime": "08:00:00",
+  "endTime": "17:00:00"
+}
+
+### 2. Consultar disponibilidad activa del doctor (200)
+GET {{baseUrl}}/api/availabilities/doctor/{{doctorId}}
+Authorization: Bearer {{token}}
+
+### 3. Actualizar disponibilidad (200)
+PUT {{baseUrl}}/api/availabilities/{{createAvailability.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dayOfWeek": 1,
+  "startTime": "08:30:00",
+  "endTime": "17:30:00",
+  "active": true
+}
+
+### 4. Volver a consultar disponibilidad actualizada (200)
+GET {{baseUrl}}/api/availabilities/doctor/{{doctorId}}
+Authorization: Bearer {{token}}
+
+### 5. Agendar cita (201)
+# Al confirmar la transaccion se genera appointment.scheduled.
+# @name scheduleAppointment
+POST {{baseUrl}}/api/appointments
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "patientId": {{patientId}},
+  "doctorId": {{doctorId}},
+  "startsAt": "2030-01-07T09:00:00",
+  "endsAt": "2030-01-07T09:30:00",
+  "reason": "Consulta general"
+}
+
+### 6. Consultar cita agendada (200)
+GET {{baseUrl}}/api/appointments/{{scheduleAppointment.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### 7. Reprogramar cita (200)
+# Al confirmar la transaccion se genera appointment.rescheduled.
+# @name rescheduleAppointment
+PUT {{baseUrl}}/api/appointments/{{scheduleAppointment.response.body.$.id}}/reschedule
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "startsAt": "2030-01-07T10:00:00",
+  "endsAt": "2030-01-07T10:30:00"
+}
+
+### 8. Cancelar cita (200)
+# Al confirmar la transaccion se genera appointment.cancelled.
+# @name cancelAppointment
+POST {{baseUrl}}/api/appointments/{{scheduleAppointment.response.body.$.id}}/cancel
+Authorization: Bearer {{token}}
+X-Correlation-Id: {{correlationId}}
+Content-Type: application/json
+
+{
+  "reason": "El paciente solicito cancelar la cita"
+}
+
+### 9. Confirmar cancelacion (200; status CANCELLED)
+GET {{baseUrl}}/api/appointments/{{scheduleAppointment.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### 10. Desactivar disponibilidad (200)
+DELETE {{baseUrl}}/api/availabilities/{{createAvailability.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### 11. Confirmar que ya no aparece como disponibilidad activa (200)
+GET {{baseUrl}}/api/availabilities/doctor/{{doctorId}}
+Authorization: Bearer {{token}}
+
+# Eventos Kafka originados por los casos de agenda:
+# - Agendar: appointment.scheduled
+# - Reprogramar: appointment.rescheduled
+# - Cancelar: appointment.cancelled
+# Esta API no tiene un endpoint HTTP para leerlos. Para comprobar su entrega,
+# Kafka debe estar habilitado/configurado y se debe consumir el topic correspondiente.

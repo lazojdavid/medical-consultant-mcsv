@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:8081/api
+@token = {{login.response.body.$.accessToken}}
+
+### Obtener token firmado por esta instancia (ejecutar primero)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### Crear médico (el rol MEDICO se asigna automáticamente)
+POST {{baseUrl}}/doctors
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "DocCarlos",
+  "password": "Cambiar123!",
+  "email": "crojas@hospital.com",
+  "phone": "+51987654321",
+  "name": "Carlos",
+  "lastName": "Rojas",
+  "address": "Av. Central 123"
+}

@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "availabilities", schema = "citas")
+@Table(name = "horarios_medicos", schema = "citas")
 @Getter
 @Setter
 @Builder
@@ -28,9 +28,10 @@ public class AvailabilityEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "horario_id")
     private Long id;
 
-    @Column(name = "doctor_id", nullable = false)
+    @Column(name = "medico_user_id", nullable = false)
     private Long doctorId;
 
     @Column(name = "day_of_week", nullable = false)
@@ -42,7 +43,7 @@ public class AvailabilityEntity {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @Column(nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean active;
 
     @Column(name = "created_at", nullable = false, updatable = false)
